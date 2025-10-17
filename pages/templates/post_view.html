@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<h1>
+  {{ post.title }} |
+  <span><small>Posted {{ post.created_at|timesince }} ago</small></span>
+</h1>
+
+<span>
+  <a href="{% url 'post_update' post.pk %}">Edit</a> | 
+  <a href="{% url 'post_delete' post.pk %}">Delete</a>
+</span>
+
+<p>{{ post.body }}</p>
+
+<hr>
+<h3>Comments ({{ comments.count }})</h3>
+
+<div class="comments-section">
+  {% for comment in comments %}
+    <div class="comment">
+      <p class="comment-author">
+        {{ comment.name }}
+        <span class="comment-date">{{ comment.created_at|date:"M d, Y H:i" }}</span>
+      </p>
+      <p class="comment-text">{{ comment.body }}</p>
+    </div>
+  {% empty %}
+    <p>No comments yet. Be the first to comment!</p>
+  {% endfor %}
+</div>
+
+<hr>
+<h4>Leave a Comment</h4>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="mb-3">
+    <label for="{{ form.name.id_for_label }}" class="form-label">Name</label>
+    <input
+      id="{{ form.name.id_for_label }}"
+      name="{{ form.name.html_name }}"
+      value="{{ form.name.value|default_if_none:'' }}"
+      class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+      placeholder="Your name"
+    >
+    {% if form.name.errors %}
+      <div class="invalid-feedback">
+        {% for err in form.name.errors %}{{ err }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label for="{{ form.body.id_for_label }}" class="form-label">Comment</label>
+    <textarea
+      id="{{ form.body.id_for_label }}"
+      name="{{ form.body.html_name }}"
+      rows="3"
+      class="form-control {% if form.body.errors %}is-invalid{% endif %}"
+      placeholder="Write your comment here..."
+    >{{ form.body.value|default_if_none:'' }}</textarea>
+    {% if form.body.errors %}
+      <div class="invalid-feedback">
+        {% for err in form.body.errors %}{{ err }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Submit Comment</button>
+</form>
+{% endblock %}
