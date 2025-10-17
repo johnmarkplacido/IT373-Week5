@@ -3,6 +3,8 @@ from django.http import HttpResponseBadRequest
 from django.contrib import messages
 from pages.forms import PostForm
 from pages.models import Post
+from pages.forms import CommentForm
+from pages.models import Comment
 
 # Create your views here.
 def home(request):
@@ -48,9 +50,30 @@ def post_create(request):
     return render(request, 'post_form.html', {'form': form})
 
 def post_view(request, pk):
-    # post = get_object_or_404(Post, pk=pk)
-    post = Post.objects.get(pk=pk)
-    return render(request, 'post_view.html', {'post': post})
+    post = get_object_or_404(Post, pk=pk)
+    comments = post.comments.all().order_by('-created_at')  # works if related_name="comments"
+    
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.save()
+            messages.success(request, 'Your comment was added!')
+            return redirect('post_view', pk=post.pk)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = CommentForm()
+
+    context = {
+        'post': post,
+        'comments': comments,
+        'form': form,
+        'title': post.title,
+    }
+    return render(request, 'post_view.html', context)
+
 
 def post_update(request, pk):
     post = get_object_or_404(Post, pk=pk)
@@ -73,4 +96,9 @@ def post_delete(request, pk):
         messages.success(request, f"Post `{post.title}` was deleted")
         return redirect('post_list')
     return render(request, 'post_confirm_delete.html', {'post': post})
+
+def csrf_failure(request, reason=""):
+    # optional: log reason, show contact/help text, provide a retry link
+    return render(request, 'csrf_failure.html', {'reason': reason}, status=403)
+
 
